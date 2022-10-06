@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright © Lyra Network.
+ * This file is part of Mi Cuenta Web plugin for Magento 2. See COPYING.md for license details.
+ *
+ * @author    Lyra Network (https://www.lyra.com/)
+ * @copyright Lyra Network
+ * @license   https://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ */
+-->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Payment\Model\CcGenericConfigProvider">
+        <arguments>
+            <argument name="methodCodes" xsi:type="array">
+                <item name="micuentaweb_standard" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_STANDARD</item>
+                <item name="micuentaweb_multi" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_MULTI</item>
+                <item name="micuentaweb_gift" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_GIFT</item>
+                <item name="micuentaweb_choozeo" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_CHOOZEO</item>
+                <item name="micuentaweb_oney" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_ONEY</item>
+                <item name="micuentaweb_fullcb" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_FULLCB</item>
+                <item name="micuentaweb_sepa" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_SEPA</item>
+                <item name="micuentaweb_paypal" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_PAYPAL</item>
+                <item name="micuentaweb_franfinance" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_FRANFINANCE</item>
+                <item name="micuentaweb_other" xsi:type="const">Lyranetwork\Micuentaweb\Helper\Data::METHOD_OTHER</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Magento\Checkout\Model\CompositeConfigProvider">
+        <arguments>
+            <argument name="configProviders" xsi:type="array">
+                <item name="micuentaweb_standard_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\StandardConfigProvider</item>
+                <item name="micuentaweb_multi_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\MultiConfigProvider</item>
+                <item name="micuentaweb_gift_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\GiftConfigProvider</item>
+                <item name="micuentaweb_choozeo_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\ChoozeoConfigProvider</item>
+                <item name="micuentaweb_oney_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\OneyConfigProvider</item>
+                <item name="micuentaweb_fullcb_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\FullcbConfigProvider</item>
+                <item name="micuentaweb_sepa_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\SepaConfigProvider</item>
+                <item name="micuentaweb_paypal_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\PaypalConfigProvider</item>
+                <item name="micuentaweb_franfinance_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\FranfinanceConfigProvider</item>
+                <item name="micuentaweb_other_config_provider" xsi:type="object">Lyranetwork\Micuentaweb\Model\OtherConfigProvider</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

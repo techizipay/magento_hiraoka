@@ -1,0 +1,109 @@
+#micuentaweb_iframe {
+    position: relative;
+    width: 100%;
+    min-height: 530px;
+    border: 0 none;
+    margin-bottom: -5px !important;
+}
+
+.micuentaweb-standard-cc-block {
+    display: none;
+}
+
+.micuentaweb-sepa-cc-block {
+    display: none;
+}
+
+ul.micuentaweb-identifier {
+    list-style-type: none;
+    display: initial;
+}
+
+a.micuentaweb-payment-link {
+    color: #39C;
+    text-decoration: none;
+    font-family: Georgia,Times,"Times New Roman",serif;
+    font-size: 16px;
+}
+
+.kr-form-error span a {
+    all: inherit !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+}
+
+.micuentaweb-multi fieldset div.field {
+    float: left;
+    width: 50%;
+}
+
+.micuentaweb-choozeo fieldset div.field {
+    float: left;
+    width: 50%;
+}
+.micuentaweb-payment-option ul {
+    padding: 5px 5px;
+}
+
+
+.micuentaweb-other fieldset div.field {
+    float: left;
+    width: 50%;
+}
+
+.micuentaweb_review .small {
+    font-size: 10px;
+}
+
+.micuentaweb_review {
+    margin-top: 10px;
+    margin-left: 20px;
+    border: 1px solid black;
+    font-size: 13px !important;
+    width: 50%;
+}
+
+.micuentaweb_review thead tr {
+    border-bottom: 1px solid black;
+}
+
+.micuentaweb_review .micuentaweb_bold {
+    font-weight: bold;
+}
+
+.micuentaweb_review td, .micuentaweb_review th {
+    padding: 5px 5px;
+}
+
+button.kr-popin-button {
+    display: none !important;
+    width: 0;
+    height: 0;
+}
+
+.micuentaweb-card {
+    display: inline !important;
+}
+
+.micuentaweb-card img, .micuentaweb-card span {
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.micuentaweb-card img {
+    max-width: 90px;
+    max-height: 30px;
+}
+
+.micuentaweb-card span {
+    height: 30px;
+}
+
+.micuentaweb-confirm-delete {
+    max-width: 750px;
+    margin: auto;
+}
+
+.micuentaweb-confirm-delete .modal-footer {
+    text-align: right;
+}

@@ -1,0 +1,212 @@
+<?php
+/**
+ * Copyright © Lyra Network.
+ * This file is part of Mi Cuenta Web plugin for Magento 2. See COPYING.md for license details.
+ *
+ * @author    Lyra Network (https://www.lyra.com/)
+ * @copyright Lyra Network
+ * @license   https://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ */
+?>
+
+<p><b>
+    <?php echo $block->escapeHtml($block->getMethod()->getTitle()); ?>
+
+    <?php
+    $payment = $block->getInfo();
+
+    if (stripos($payment->getMethod(), 'micuentaweb_multi') === 0) {
+        // Payment in installments, show selected option.
+        $option = $payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::MULTI_OPTION);
+        if (is_string($option)) {
+            $option = @unserialize($option);
+        }
+
+        if (is_array($option) && ! empty($option)) {
+            echo '<br />';
+            echo $block->escapeHtml($option['label'] . ' (' . $option['count'] . 'X)');
+        }
+    } elseif ($payment->getMethod() === 'micuentaweb_oney') {
+        // Oney payment, show selected Oney option.
+        $option = $payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::ONEY_OPTION);
+        if (is_string($option)) {
+            $option = @unserialize($option);
+        }
+
+        if (is_array($option) && ! empty($option)) {
+            echo '<br />';
+            echo $block->escapeHtml($option['label']);
+        }
+    }  elseif (stripos($payment->getMethod(), 'micuentaweb_other') === 0) {
+        // Other payment means, show selected option.
+        $option = $payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::OTHER_OPTION);
+        if (is_string($option)) {
+            $option = @unserialize($option);
+        }
+
+        if (is_array($option) && ! empty($option)) {
+            echo '<br />';
+            echo $block->escapeHtml($option['label'] . ' (' . $option['means']. ')');
+        }
+    }
+    ?>
+</b></p>
+
+<?php
+if ($payment->getCcTransId()) {
+    echo $block->getResultDescHtml();
+    echo '<br /><br />';
+
+    echo '<b>' . __('Transaction ID') . ': </b>' . $block->escapeHtml($payment->getCcTransId());
+    echo '<br />';
+
+    if ((stripos($payment->getMethod(), 'micuentaweb_multi') === false) && ($payment->getCcType() !== 'MULTI')) {
+        echo '<b>' . __('Transaction UUID') . ': </b>' .
+            $block->escapeHtml($payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::TRANS_UUID));
+        echo '<br />';
+    }
+
+    // Authorized amount.
+    if ($authorizedAmount = $payment->getAdditionalInformation('authorized_amount')) {
+        echo '<b>' . __('Authorized amount') . ': </b>' . $authorizedAmount . '<br />';
+    }
+
+    // Store installments number/config.
+    if ($installmentsNumber = $payment->getAdditionalInformation('payment_option_code')) {
+        echo '<b>' . __('Installments number') . ': </b>' . $installmentsNumber . '<br />';
+    }
+
+    if ($payment->getCcType() === 'MULTI') { // Multi brand.
+        echo $block->getMultiPaymentDetailsHtml();
+    } else {
+        echo $block->getPaymentDetailsHtml();
+    }
+
+    // 3DS results.
+    echo '<b>' . __('3DS Authentication') . ': </b>';
+    if ($threedsStatus = $payment->getAdditionalInformation('threeds_status')) {
+        echo $threedsStatus;
+        echo '<br />';
+        echo ($threedsCavv = $payment->getCcSecureVerify()) ? '<b>' . __('3DS Certificate') . ': </b>' . $threedsCavv : '';
+        echo '<br />';
+        echo ($threedsAuthType = $payment->getAdditionalInformation('threeds_auth_type')) ? '<b>' . __('Authentication Type') . ': </b>' . $threedsAuthType : '';
+    } else {
+        echo 'UNAVAILABLE';
+    }
+
+    // Risk control result translations.
+    $riskControl = $payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::RISK_CONTROL);
+    if (is_string($riskControl)) {
+        $riskControl = @unserialize($riskControl);
+    }
+
+    if (is_array($riskControl) && ! empty($riskControl)) {
+        echo '<br />';
+        echo '<b>' . __('Fraud Control Result:') . '</b>';
+
+        $colors = [
+            'OK' => '#4F8A10',
+            'WARNING' => '#9F6000',
+            'ERROR' => '#D8000C'
+        ];
+
+        foreach ($riskControl as $key => $value) {
+            echo '<br />&nbsp;&nbsp;- ' . $block->escapeHtml($block->translate($key, 'risk_control')) . ' : ';
+            echo '<span style="color: ' . $block->escapeHtml($colors[$value]) . ';">' .
+                $block->escapeHtml($value) . '</span>';
+        }
+    }
+
+    $riskAssessment = $payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::RISK_ASSESSMENT);
+    if (is_string($riskAssessment)) {
+        $riskAssessment = @unserialize($riskAssessment);
+    }
+
+    if (is_array($riskAssessment) && ! empty($riskAssessment)) {
+        echo '<br />';
+        echo '<b>' . __('Advanced Risk Assessment Result:') . '</b>';
+
+        foreach ($riskAssessment as $value) {
+            if (! $value) {
+                continue;
+            }
+
+            echo '<br />&nbsp;&nbsp;- ' . $block->escapeHtml($block->translate($value, 'risk_assessment'));
+        }
+    }
+
+    // Display contact support link.
+    // Get configured features.
+    $features = \Lyranetwork\Micuentaweb\Helper\Data::$pluginFeatures;
+
+    if ($features['support']) {
+        echo '<br /><br />';
+
+        $order = $payment->getOrder();
+        $info = $block->getStoreInfo($order);
+
+        $orderAdminDate = $block->formatDate(
+            $block->getOrderAdminDate($order->getCreatedAt()),
+            \IntlDateFormatter::MEDIUM,
+            true
+        );
+
+        $script = '
+        <script>
+        require(
+            [
+                \'jquery\',
+                \'contactSupportComponent\'
+            ],
+            function ($, component) {
+                $(\'contact-support\') .on(\'sendmail\', function(e) {
+                    $(\'body\').trigger(\'processStart\');
+                    $.ajax({
+                        method: \'POST\',
+                        url: \''. $block->escapeUrl($block->sendMailUrl()) . '\',
+                        data: e.originalEvent.detail,
+                        showLoader: true,
+                        success: function() {
+                            location.reload();
+                        },
+                        always: function() {
+                            $(\'body\').trigger(\'processStop\');
+                        }
+                    });
+                });
+            });
+        </script>
+
+        <contact-support
+            shop-id="' . $info['shop-id'] . '"
+            context-mode="'. $info['context-mode']. '"
+            sign-algo="' . $info['sign-algo'] . '"
+            contrib="' . $info['contrib'] . '"
+            integration-mode="' . $info['integration-mode'] . '"
+            plugins="' . $info['plugins'] . '"
+            title=""
+            first-name="' . $info['first-name'] . '"
+            last-name="' . $info['last-name'] . '"
+            from-email="' . $info['from-email'] . '"
+            to-email="' . $info['to-email'] . '"
+            cc-emails=""
+            phone-number=""
+            language="' . $info['language'] . '"
+            is-order="true"
+            transaction-uuid="' . $block->escapeHtml($payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::TRANS_UUID)) . '"
+            order-id="' . $block->escapeHtml($order->getIncrementId()) . '"
+            order-number="' . $block->escapeHtml($order->getIncrementId()) . '"
+            order-status="' . $block->escapeHtml($order->getStatusLabel()) . '"
+            order-date="' . $block->escapeHtml($orderAdminDate) . '"
+            order-amount="' . $block->escapeHtml($order->formatPrice($order->getGrandTotal())) . '"
+            cart-amount=""
+            shipping-fees="' . $block->escapeHtml($order->formatPrice($order->getShippingAmount())) . '"
+            order-discounts="' . $block->escapeHtml($order->getDiscountDescription() . ' ' . $order->formatPrice($order->getDiscountAmount())) . '"
+            order-carrier="' . $block->escapeHtml($order->getShippingDescription()) . '">
+        </contact-support>';
+
+        echo $script;
+    }
+
+    echo '<br />';
+}

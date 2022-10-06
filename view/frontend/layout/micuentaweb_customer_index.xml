@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Lyra Network.
+ * This file is part of Mi Cuenta Web plugin for Magento 2. See COPYING.md for license details.
+ *
+ * @author    Lyra Network (https://www.lyra.com/)
+ * @copyright Lyra Network
+ * @license   https://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="customer_account" />
+
+    <head>
+        <css src="Lyranetwork_Micuentaweb::css/micuentaweb.css" />
+    </head>
+
+    <body>
+        <referenceBlock name="page.main.title">
+            <action method="setPageTitle">
+                <argument translate="true" name="title" xsi:type="string">My payment means</argument>
+            </action>
+        </referenceBlock>
+        <referenceContainer name="content">
+            <block class="Lyranetwork\Micuentaweb\Block\Customer\Index" name="micuentaweb_payment_means" template="Lyranetwork_Micuentaweb::customer/payment_means.phtml" cacheable="false" />
+        </referenceContainer>
+    </body>
+</page>

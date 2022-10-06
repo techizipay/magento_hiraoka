@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Lyra Network.
+ * This file is part of Mi Cuenta Web plugin for Magento 2. See COPYING.md for license details.
+ *
+ * @author    Lyra Network (https://www.lyra.com/)
+ * @copyright Lyra Network
+ * @license   https://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ */
+-->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="payment">
+            <group id="micuentaweb" translate="comment" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label><![CDATA[Mi Cuenta Web]]></label>
+                <comment><![CDATA[Accept payments by credit cards with Mi Cuenta Web.]]></comment>
+                <attribute type="expanded">0</attribute>
+                <fieldset_css>complex micuentaweb-section</fieldset_css>
+                <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
+
+                <include path="Lyranetwork_Micuentaweb::system/general.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/standard.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/multi.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/gift.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/choozeo.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/oney.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/fullcb.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/sepa.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/paypal.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/franfinance.xml" />
+                <include path="Lyranetwork_Micuentaweb::system/other.xml" />
+            </group>
+        </section>
+    </system>
+</config>
