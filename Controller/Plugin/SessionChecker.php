@@ -47,7 +47,7 @@ class SessionChecker
             return false;
         }
 
-        if (in_array($this->request->getFrontName(), ['admin', 'micuentaweb'])) {
+        if ($this->request->getFrontName() === 'micuentaweb') {
             foreach (self::PAYMENT_RETURN_PATHS as $path) {
                 if (strpos((string)$this->request->getPathInfo(), $path) !== false) {
                     return false;

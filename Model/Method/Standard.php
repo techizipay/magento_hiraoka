@@ -374,10 +374,8 @@ class Standard extends Micuentaweb
 
         $billingAddress = $quote->getBillingAddress();
 
-        if (! $quote->getReservedOrderId()) {
-            // Reserve order ID and save quote.
-            $quote->reserveOrderId()->save();
-        }
+        // Reserve order ID and save quote.
+        $quote->reserveOrderId()->save();
 
         $data = [
             'orderId' => $quote->getReservedOrderId(),
@@ -423,11 +421,11 @@ class Standard extends Micuentaweb
                 'address2' => $shippingAddress->getStreetLine(2),
                 'zipCode' => $shippingAddress->getPostcode(),
                 'city' => $shippingAddress->getCity(),
-                'state' => $shippingAddress->getregion(),
-                'phoneNumber' => $shippingAddress->gettelephone(),
+                'state' => $shippingAddress->getRegion(),
+                'phoneNumber' => $shippingAddress->getTelephone(),
                 'country' => $shippingAddress->getCountryId()
             );
-        }
+        } 
 
         // Set the maximum attempts number in case of failed payment.
         if ($this->getConfigData('rest_attempts')) {

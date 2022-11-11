@@ -223,9 +223,8 @@ class Oney extends Micuentaweb
             return false;
         }
 
-        if (! $quote->getReservedOrderId()) {
-            $quote->reserveOrderId(); // Guess order id.
-        }
+        // Reserve order ID and save quote.
+        $quote->reserveOrderId()->save();
 
         if (! preg_match(Checkout::ORDER_ID_REGEX, $quote->getReservedOrderId())) {
             // Order id doesn't match Oney rules.
