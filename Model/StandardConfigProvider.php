@@ -56,6 +56,7 @@ class StandardConfigProvider extends \Lyranetwork\Micuentaweb\Model\MicuentawebC
         // For payment via REST API.
         $config['payment'][$this->method->getCode()]['restFormToken'] = $this->getRestFormToken();
         $config['payment'][$this->method->getCode()]['language'] = $this->method->getPaymentLanguage();
+        $config['payment'][$this->method->getCode()]['restReturnUrl'] = $this->dataHelper->getRestReturnUrl();
 
         return $config;
     }
@@ -76,6 +77,11 @@ class StandardConfigProvider extends \Lyranetwork\Micuentaweb\Model\MicuentawebC
 
     private function getRestFormToken()
     {
+        // Do not create payment token until arriving to checkout page.
+        if ($this->urlBuilder->getCurrentUrl() != $this->urlBuilder->getUrl('checkout', ['_secure' => true])) {
+            return false;
+        }
+
         if (! $this->method->isAvailable()) {
             return false;
         }

@@ -24,14 +24,14 @@ class FranfinancePaymentOptions extends \Lyranetwork\Micuentaweb\Block\Adminhtml
         $this->addColumn(
             'label',
             [
-                'label' => __('Label'),
+                'label' => __('Label '),
                 'style' => 'width: 220px;',
             ]
         );
         $this->addColumn(
             'payment_means',
             [
-                'label' => __('Count'),
+                'label' => __('Count '),
                 'style' => 'width: 70px;',
                 'renderer' => $this->getListRenderer('payment_means', $this->getPaymentMeans())
             ]

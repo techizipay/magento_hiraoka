@@ -24,7 +24,7 @@ class MultiPaymentOptions extends \Lyranetwork\Micuentaweb\Block\Adminhtml\Syste
         $this->addColumn(
             'label',
             [
-                'label' => __('Label'),
+                'label' => __('Label '),
                 'style' => 'width: 150px;'
             ]
         );
@@ -52,7 +52,7 @@ class MultiPaymentOptions extends \Lyranetwork\Micuentaweb\Block\Adminhtml\Syste
         $this->addColumn(
             'count',
             [
-                'label' => __('Count'),
+                'label' => __('Count '),
                 'style' => 'width: 65px;'
             ]
         );

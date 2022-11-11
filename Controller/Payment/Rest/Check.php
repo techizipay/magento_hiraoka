@@ -40,7 +40,7 @@ class Check extends \Lyranetwork\Micuentaweb\Controller\Payment\Check
     protected $quoteRepository;
 
     /**
-     * @var \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory
+     * @var \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory
      */
     protected $micuentawebResponseFactory;
 
@@ -122,6 +122,9 @@ class Check extends \Lyranetwork\Micuentaweb\Controller\Payment\Check
 
         // Disable quote.
         if ($quote->getIsActive()) {
+            $quote->getPayment()->unsAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::TOKEN_DATA);
+            $quote->getPayment()->unsAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::TOKEN);
+
             $quote->setIsActive(false);
             $this->quoteRepository->save($quote);
             $this->dataHelper->log("Cleared quote, reserved order ID: #{$quote->getReservedOrderId()}.");

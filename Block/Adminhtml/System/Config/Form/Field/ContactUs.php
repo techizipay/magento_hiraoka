@@ -22,7 +22,7 @@ class ContactUs extends \Magento\Config\Block\System\Config\Form\Field
      */
     public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element)
     {
-        $comment = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::formatSupportEmails('soporte@micuentaweb.pe');
+        $comment = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::formatSupportEmails('soporte@micuentaweb.pe');
         $element->setComment($comment);
 
         return parent::render($element);

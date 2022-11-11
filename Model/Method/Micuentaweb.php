@@ -9,8 +9,10 @@
  */
 namespace Lyranetwork\Micuentaweb\Model\Method;
 
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi;
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebRest;
+use Lyranetwork\Micuentaweb\Model\Api\Form\Api as MicuentawebApi;
+use Lyranetwork\Micuentaweb\Model\Api\Rest\Api as MicuentawebRest;
+use Lyranetwork\Micuentaweb\Model\Api\Refund\Api as MicuentawebRefund;
+use Lyranetwork\Micuentaweb\Model\Api\Refund\OrderInfo as MicuentawebOrderInfo;
 
 abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
 {
@@ -42,12 +44,12 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
     protected $localeResolver;
 
     /**
-     * @var \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequest
+     * @var \Lyranetwork\Micuentaweb\Model\Api\Form\Request
      */
     protected $micuentawebRequest;
 
     /**
-     * @var \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse
+     * @var \Lyranetwork\Micuentaweb\Model\Api\Form\Response
      */
     protected $micuentawebResponse;
 
@@ -92,6 +94,11 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
     protected $restHelper;
 
     /**
+     * @var \Lyranetwork\Micuentaweb\Helper\Refund
+     */
+    protected $refundHelper;
+
+    /**
      * @var \Magento\Framework\Message\ManagerInterface
      */
     protected $messageManager;
@@ -120,8 +127,8 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magento\Payment\Model\Method\Logger $logger
      * @param \Magento\Framework\Locale\ResolverInterface $localeResolver
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequest $micuentawebRequest
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\Request $micuentawebRequest
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
      * @param \Magento\Sales\Model\Order\Payment\Transaction $transaction
      * @param \Magento\Sales\Model\ResourceModel\Order\Payment\Transaction $transactionResource
      * @param \Magento\Framework\UrlInterface $urlBuilder
@@ -130,6 +137,7 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
      * @param \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Checkout $checkoutHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Rest $restHelper
+     * @param \Lyranetwork\Micuentaweb\Helper\Refund $refundHelper
      * @param \Magento\Framework\Message\ManagerInterface $messageManager
      * @param \Magento\Framework\Module\Dir\Reader $dirReader
      * @param \Magento\Framework\DataObject\Factory $dataObjectFactory
@@ -147,8 +155,8 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Payment\Model\Method\Logger $logger,
         \Magento\Framework\Locale\ResolverInterface $localeResolver,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequestFactory $micuentawebRequestFactory,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\RequestFactory $micuentawebRequestFactory,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory,
         \Magento\Sales\Model\Order\Payment\Transaction $transaction,
         \Magento\Sales\Model\ResourceModel\Order\Payment\Transaction $transactionResource,
         \Magento\Framework\UrlInterface $urlBuilder,
@@ -157,6 +165,7 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
         \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper,
         \Lyranetwork\Micuentaweb\Helper\Checkout $checkoutHelper,
         \Lyranetwork\Micuentaweb\Helper\Rest $restHelper,
+        \Lyranetwork\Micuentaweb\Helper\Refund $refundHelper,
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Magento\Framework\Module\Dir\Reader $dirReader,
         \Magento\Framework\DataObject\Factory $dataObjectFactory,
@@ -176,6 +185,7 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
         $this->paymentHelper = $paymentHelper;
         $this->checkoutHelper = $checkoutHelper;
         $this->restHelper = $restHelper;
+        $this->refundHelper = $refundHelper;
         $this->messageManager = $messageManager;
         $this->dirReader = $dirReader;
         $this->dataObjectFactory = $dataObjectFactory;
@@ -909,8 +919,8 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
         $order = $this->getInfoInstance()->getOrder();
         $order->setCanSendNewEmailFlag(false);
 
-        $stateObject->setState(\Magento\Sales\Model\Order::STATE_NEW);
-        $stateObject->setStatus('pending');
+        $stateObject->setState(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT);
+        $stateObject->setStatus('pending_payment');
         $stateObject->setIsNotified(false);
 
         return $this;
@@ -1043,126 +1053,32 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
         $order = $payment->getOrder();
         $storeId = $order->getStore()->getId();
 
-        $this->dataHelper->log("Start refund of {$amount} {$order->getOrderCurrencyCode()} for order " .
-             "#{$order->getIncrementId()} with {$this->_code} payment method.");
-
         try {
-            // Get currency.
-            $currency = MicuentawebApi::findCurrencyByAlphaCode($order->getOrderCurrencyCode());
-
-            // Retrieve transaction UUID.
-            $uuid = $payment->getAdditionalInformation(\Lyranetwork\Micuentaweb\Helper\Payment::TRANS_UUID);
-            if (! $uuid) { // Retro compatibility.
-                // Get UUID from Order.
-                $uuidArray = $this->getPaymentDetails($order);
-                $uuid = reset($uuidArray);
-            }
-
-            $requestData = ['uuid' => $uuid];
-
-            // Perform our request.
-            $client = new MicuentawebRest(
-                $this->dataHelper->getCommonConfigData('rest_url', $storeId),
-                $this->dataHelper->getCommonConfigData('site_id', $storeId),
-                $this->restHelper->getPrivateKey($storeId)
-            );
-
-            $getPaymentDetails = $client->post('V4/Transaction/Get', json_encode($requestData));
-
-            $this->restHelper->checkResult($getPaymentDetails);
-
-            $transStatus = $getPaymentDetails['answer']['detailedStatus'];
-            $amountInCents = $currency->convertAmountToInteger($amount);
-
             $commentText = $this->getUserInfo();
-
             foreach ($payment->getCreditmemo()->getComments() as $comment) {
                 $commentText .= '; ' . $comment->getComment();
             }
 
-            if ($transStatus === 'CAPTURED') { // Transaction captured, we can do refund.
-                $requestData = [
-                    'uuid' => $uuid,
-                    'amount' => $amountInCents,
-                    'resolutionMode' => 'REFUND_ONLY',
-                    'currency' => $currency->getAlpha3(),
-                    'comment' => $commentText
-                ];
+           $micuentawebOrderInfo = new MicuentawebOrderInfo();
+           $micuentawebOrderInfo->setOrderRemoteId($order->getIncrementId());
+           $micuentawebOrderInfo->setOrderId($order->getIncrementId());
+           $micuentawebOrderInfo->setOrderCurrencyIsoCode($order->getOrderCurrencyCode());
+           $micuentawebOrderInfo->setOrderCurrencySign($order->getOrderCurrencyCode());
+           $micuentawebOrderInfo->setOrderUserInfo($commentText);
 
-                $refundPaymentResponse = $client->post('V4/Transaction/CancelOrRefund', json_encode($requestData));
-
-                // Pending or accepted payment.
-                $successStatuses = array_merge(MicuentawebApi::getSuccessStatuses(), MicuentawebApi::getPendingStatuses());
-
-                $this->restHelper->checkResult($refundPaymentResponse, $successStatuses);
-
-                // Check operation type.
-                $transType = $refundPaymentResponse['answer']['operationType'];
-
-                if ($transType !== 'CREDIT') {
-                    throw new \UnexpectedValueException("Unexpected transaction type returned ($transType).");
-                }
-
-                // Create refund transaction in Magento.
-                $this->createRefundTransaction($payment, $refundPaymentResponse['answer']);
-
-                $this->dataHelper->log("Online money refund for order #{$order->getIncrementId()} is successful.");
-            } else {
-                $transAmount = $getPaymentDetails['answer']['amount'];
-
-                if ($amountInCents >= $transAmount) { // Transaction cancel.
-                    $requestData = [
-                        'uuid' => $uuid,
-                        'resolutionMode' => 'CANCELLATION_ONLY',
-                        'comment' => $commentText
-                    ];
-
-                    $cancelPaymentResponse = $client->post('V4/Transaction/CancelOrRefund', json_encode($requestData));
-
-                    $this->restHelper->checkResult($cancelPaymentResponse, ['CANCELLED']);
-
-                    $order->cancel();
-                    $this->dataHelper->log("Online payment cancel for order #{$order->getIncrementId()} is successful.");
-                } else {
-                    // Partial transaction cancel, call update WS.
-                    $requestData = [
-                        'uuid' => $uuid,
-                        'cardUpdate' => [
-                            'amount' => $transAmount - $amountInCents,
-                            'currency' => $currency->getAlpha3()
-                        ],
-                        'comment' => $commentText
-                    ];
-
-                    $updatePaymentResponse = $client->post('V4/Transaction/Update', json_encode($requestData));
-
-                    $this->restHelper->checkResult($updatePaymentResponse,
-                        [
-                            'AUTHORISED',
-                            'AUTHORISED_TO_VALIDATE',
-                            'WAITING_AUTHORISATION',
-                            'WAITING_AUTHORISATION_TO_VALIDATE'
-                        ]
-                    );
-                    $this->dataHelper->log("Online payment update for order #{$order->getIncrementId()} is successful.");
-                }
-            }
-        } catch(\UnexpectedValueException $e) {
-            $this->dataHelper->log(
-                "Refund payment error: {$e->getMessage()}.",
-                \Psr\Log\LogLevel::ERROR
+            $refundApi = new MicuentawebRefund(
+                $this->refundHelper->setPayment($payment),
+                $this->restHelper->getPrivateKey($storeId),
+                $this->dataHelper->getCommonConfigData('rest_url', $storeId),
+                $this->dataHelper->getCommonConfigData('site_id', $storeId),
+                'Magento'
             );
 
-            throw new \Exception($e->getMessage());
+            // Do online refund.
+            $order->setPayment($payment);
+            $refundApi->refund($micuentawebOrderInfo, $amount);
         } catch (\Exception $e) {
-            $this->dataHelper->log(
-                "Refund payment exception with code {$e->getCode()}: {$e->getMessage()}",
-                \Psr\Log\LogLevel::ERROR
-            );
-
-            if ($e->getCode() === 'PSP_083') {
-                throw new \Exception(__('Chargebacks cannot be refunded.'));
-            } elseif ($e->getCode() === 'PSP_100') {
+            if ($e->getCode() === 'PSP_100') {
                 // Merchant does not subscribe to REST WS option, refund payment offline.
                 $notice = __('You are not authorized to do this action online. Please, do not forget to update payment in Mi Cuenta Web Back Office.');
                 $this->messageManager->addWarningMessage($notice);
@@ -1179,57 +1095,10 @@ abstract class Micuentaweb extends \Magento\Payment\Model\Method\AbstractMethod
             }
         }
 
-        $this->dataHelper->log("Saving refunded order #{$order->getIncrementId()}.");
         $order->save();
         $this->dataHelper->log("Refunded order #{$order->getIncrementId()} has been saved.");
 
         return $this;
-    }
-
-    private function createRefundTransaction($payment, $refundResponse)
-    {
-        $response = $this->restHelper->convertRestResult($refundResponse, true);
-
-        // Save transaction details to sales_payment_transaction.
-        $transactionId = $response['vads_trans_id']. '-' . $response['vads_sequence_number'];
-
-        $expiry = '';
-        if ($response['vads_expiry_month'] && $response['vads_expiry_year']) {
-            $expiry = str_pad($response['vads_expiry_month'], 2, '0', STR_PAD_LEFT) . ' / ' .
-                $response['vads_expiry_year'];
-        }
-
-        // Save paid amount.
-        $currency = MicuentawebApi::findCurrencyByNumCode($response['vads_currency']);
-        $amount = round($currency->convertAmountToFloat($response['vads_amount']), $currency->getDecimals());
-
-        $amountDetail = $amount . ' ' . $currency->getAlpha3();
-
-        if (isset($response['vads_effective_currency']) &&
-            ($response['vads_currency'] !== $response['vads_effective_currency'])) {
-                $effectiveCurrency = MicuentawebApi::findCurrencyByNumCode($response['vads_effective_currency']);
-
-            $effectiveAmount = round(
-                $effectiveCurrency->convertAmountToFloat($response['vads_effective_amount']),
-                $effectiveCurrency->getDecimals()
-            );
-
-            $amountDetail = $effectiveAmount . ' ' . $effectiveCurrency->getAlpha3() . ' (' . $amountDetail . ')';
-        }
-
-        $additionalInfo = [
-            'Transaction Type' => 'CREDIT',
-            'Amount' => $amountDetail,
-            'Transaction ID' => $transactionId,
-            'Transaction UUID' => $response['vads_trans_uuid'],
-            'Transaction Status' => $response['vads_trans_status'],
-            'Means of payment' => $response['vads_card_brand'],
-            'Card Number' => $response['vads_card_number'],
-            'Expiration Date' => $expiry
-        ];
-
-        $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_REFUND;
-        $this->paymentHelper->addTransaction($payment, $transactionType, $transactionId, $additionalInfo);
     }
 
     protected function getPaymentDetails($order, $uuidOnly = true)

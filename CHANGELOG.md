@@ -1,3 +1,21 @@
+2.6.3, 2022-11-10:
+- [embedded] Do not create payment token if quote data has not changed.
+- [embedded] Workarround to avoid the extra retry when the number of attempts is reached.
+- Minor code fixes.
+
+2.6.2, 2022-10-17:
+- Bug fix: Fix error related to number of times a coupon is used when payment is failed.
+- Bug fix: Fix error related to CURLOPT_SSL_VERIFYHOST supported values in REST API.
+
+2.6.1, 2022-09-14:
+- [embedded] Bug fix: Fix embedded fields displaying.
+- Minor code fixes.
+
+2.6.0, 2022-09-08:
+- [embedded] Possibility to enable payment by alias with embedded payment fields.
+- Update list of supported payment means.
+- Added Portuguese translation.
+
 2.5.13, 2022-08-16:
 - Allow module to be installed when using php 8.1 or higher.
 

@@ -38,7 +38,7 @@ class MultiPaymentCard implements \Magento\Framework\Option\ArrayInterface
             ]
         ];
 
-        foreach (\Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::getSupportedCardTypes() as $code => $name) {
+        foreach (\Lyranetwork\Micuentaweb\Model\Api\Form\Api::getSupportedCardTypes() as $code => $name) {
             if (in_array($code, $this->multiCards)) {
                 $options[] = [
                     'value' => $code,

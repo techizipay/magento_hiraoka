@@ -9,7 +9,7 @@
  */
 namespace Lyranetwork\Micuentaweb\Block\Payment\Rest;
 
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi;
+use Lyranetwork\Micuentaweb\Model\Api\Form\Api as MicuentawebApi;
 
 class Head extends \Magento\Framework\View\Element\Template
 {
@@ -58,9 +58,7 @@ class Head extends \Magento\Framework\View\Element\Template
 
     public function getReturnUrl()
     {
-        return $this->_urlBuilder->getUrl('micuentaweb/payment_rest/response', [
-            '_secure' => true
-        ]);
+        return $this->dataHelper->getRestReturnUrl();
     }
 
     public function getLanguage()
@@ -106,6 +104,11 @@ class Head extends \Magento\Framework\View\Element\Template
         }
 
         return null;
+    }
+
+    public function getCardLabel()
+    {
+        return $this->method->getConfigData('rest_card_register_label') ? $this->method->getConfigData('rest_card_register_label') : null;
     }
 
     /**

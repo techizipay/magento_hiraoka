@@ -9,7 +9,7 @@
  */
 namespace Lyranetwork\Micuentaweb\Helper;
 
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi;
+use Lyranetwork\Micuentaweb\Model\Api\Form\Api as MicuentawebApi;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 class Checkout

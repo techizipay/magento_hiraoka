@@ -24,14 +24,14 @@ class AddedPaymentMeans extends \Lyranetwork\Micuentaweb\Block\Adminhtml\System\
         $this->addColumn(
             'meanCode',
             [
-                'label' => __('Code'),
+                'label' => __('Code '),
                 'style' => 'width: 100px;'
             ]
         );
         $this->addColumn(
             'meanName',
             [
-                'label' => __('Label'),
+                'label' => __('Label '),
                 'style' => 'width: 180px;'
             ]
         );
@@ -48,7 +48,7 @@ class AddedPaymentMeans extends \Lyranetwork\Micuentaweb\Block\Adminhtml\System\
      */
     public function getArrayRows()
     {
-        $supportedCards = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::getSupportedCardTypes();
+        $supportedCards = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::getSupportedCardTypes();
 
         // Get Added payment means.
         $addedCards = $this->getElement()->getValue();

@@ -61,7 +61,7 @@ class AddedPaymentMeans extends \Lyranetwork\Micuentaweb\Model\System\Config\Bac
         $usedCards = [];
 
         // Get supported payment means.
-        $supportedCards = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::getSupportedCardTypes();
+        $supportedCards = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::getSupportedCardTypes();
 
         foreach ($value as $key => $card) {
             $i++;

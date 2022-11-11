@@ -9,13 +9,17 @@
  */
 namespace Lyranetwork\Micuentaweb\Helper;
 
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi;
+use Lyranetwork\Micuentaweb\Model\Api\Form\Api as MicuentawebApi;
 
 class Payment
 {
     // Key to save if payment is by identifier.
     const IDENTIFIER = 'micuentaweb_identifier';
-    const SEPA_IDENTIFIER = 'micuentaweb_identifier';
+    const SEPA_IDENTIFIER = 'micuentaweb_sepa_identifier'; // TODO ?????
+
+    const TOKEN_DATA = 'micuentaweb_token_data'; // Key to save payment token data.
+    const TOKEN = 'micuentaweb_token'; // Key to save payment token.
+    const TOKEN_EXPIRE = 'micuentaweb_token_expire'; // Key to save payment token expected expiration delay.
 
     // Key to save choosen multi option.
     const MULTI_OPTION = 'micuentaweb_multi_option';
@@ -111,6 +115,11 @@ class Payment
     protected $timezone;
 
     /**
+     * @var \Magento\SalesRule\Model\Coupon\UpdateCouponUsages
+     */
+    protected $updateCouponUsages;
+
+    /**
      * @param \Magento\Framework\Event\ManagerInterface $eventManager
      * @param \Magento\Sales\Api\TransactionRepositoryInterface $transactionRepository
      * @param \Magento\Sales\Model\Order\Payment\Transaction\ManagerInterface $transactionManager
@@ -122,6 +131,7 @@ class Payment
      * @param \Magento\Framework\DataObject\Factory $dataObjectFactory
      * @param \Magento\Sales\Model\Order\Config $orderConfig
      * @param \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone
+     * @param \Magento\SalesRule\Model\Coupon\UpdateCouponUsages $updateCouponUsages
      */
     public function __construct(
         \Magento\Framework\Event\ManagerInterface $eventManager,
@@ -134,7 +144,8 @@ class Payment
         \Lyranetwork\Micuentaweb\Helper\Rest $restHelper,
         \Magento\Framework\DataObject\Factory $dataObjectFactory,
         \Magento\Sales\Model\Order\Config $orderConfig,
-        \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone
+        \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone,
+        \Magento\SalesRule\Model\Coupon\UpdateCouponUsages $updateCouponUsages
     ) {
         $this->eventManager = $eventManager;
         $this->transactionRepository = $transactionRepository;
@@ -147,17 +158,18 @@ class Payment
         $this->dataObjectFactory = $dataObjectFactory;
         $this->orderConfig = $orderConfig;
         $this->timezone = $timezone;
+        $this->updateCouponUsages = $updateCouponUsages;
     }
 
     /**
      * Update order status and eventually create invoice.
      *
      * @param \Magento\Sales\Model\Order $order
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
      */
     public function registerOrder(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
     ) {
         $this->dataHelper->log("Saving payment for order #{$order->getIncrementId()}.");
 
@@ -203,13 +215,13 @@ class Payment
      * Get new order state and status according to gateway response.
      *
      * @param \Magento\Sales\Model\Order $order
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
      * @param boolean $ignoreFraud
      * @return \Magento\Framework\DataObject
      */
     public function nextOrderState(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response,
         $ignoreFraud = false
     ) {
         if ($response->isToValidatePayment()) {
@@ -252,7 +264,7 @@ class Payment
         return $stateObject;
     }
 
-    public function updatePaymentInfo(\Magento\Sales\Model\Order $order, \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response)
+    public function updatePaymentInfo(\Magento\Sales\Model\Order $order, \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response)
     {
         $this->dataHelper->log("Updating payment information for order #{$order->getIncrementId()}.");
 
@@ -549,7 +561,7 @@ class Payment
 
     public function saveIdentifier(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
     ) {
         if (! $order->getCustomerId()) {
             return;
@@ -591,7 +603,7 @@ class Payment
 
     public function saveSepaIdentifier(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
     ) {
         if (! $order->getCustomerId()) {
             return;
@@ -649,7 +661,7 @@ class Payment
                 $requestData = ['paymentMethodToken' => $identifier];
 
                 // Perform REST request to cancel identifier.
-                $client = new \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRest(
+                $client = new \Lyranetwork\Micuentaweb\Model\Api\Rest\Api(
                     $this->dataHelper->getCommonConfigData('rest_url'),
                     $this->dataHelper->getCommonConfigData('site_id'),
                     $this->restHelper->getPrivateKey()
@@ -782,11 +794,11 @@ class Payment
      * Cancel order.
      *
      * @param \Magento\Sales\Model\Order $order
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
      */
     public function cancelOrder(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
     ) {
         $this->dataHelper->log("Canceling order #{$order->getIncrementId()}.");
 
@@ -802,6 +814,8 @@ class Payment
         $this->eventManager->dispatch('order_cancel_after', [
             'order' => $order
         ]);
+
+        $this->updateCouponUsages->execute($order, false);
     }
 
     /**
@@ -857,10 +871,6 @@ class Payment
     public function isSepa($response)
     {
         return $response->get('card_brand') === 'SDD';
-    }
-
-    public function isPending($order) {
-        return in_array($order->getStatus(), array('pending_payment', 'pending'));
     }
 
     /**

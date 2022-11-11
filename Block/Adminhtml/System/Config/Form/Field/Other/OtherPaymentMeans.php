@@ -66,7 +66,7 @@ class OtherPaymentMeans extends \Lyranetwork\Micuentaweb\Block\Adminhtml\System\
         $this->addColumn(
             'label',
             [
-                'label' => __('Label'),
+                'label' => __('Label '),
                 'style' => 'width: 120px;'
             ]
         );

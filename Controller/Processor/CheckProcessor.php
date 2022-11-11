@@ -9,7 +9,7 @@
  */
 namespace Lyranetwork\Micuentaweb\Controller\Processor;
 
-use \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi;
+use \Lyranetwork\Micuentaweb\Model\Api\Form\Api as MicuentawebApi;
 use Lyranetwork\Micuentaweb\Model\ResponseException;
 
 class CheckProcessor
@@ -40,7 +40,7 @@ class CheckProcessor
     protected $orderFactory;
 
     /**
-     * @var \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory
+     * @var \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory
      */
     protected $micuentawebResponseFactory;
 
@@ -50,7 +50,7 @@ class CheckProcessor
      * @param \Lyranetwork\Micuentaweb\Helper\Data $dataHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper
      * @param \Magento\Sales\Model\OrderFactory $orderFactory
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
      */
     public function __construct(
         \Magento\Store\Model\StoreManagerInterface $storeManager,
@@ -58,7 +58,7 @@ class CheckProcessor
         \Lyranetwork\Micuentaweb\Helper\Data $dataHelper,
         \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper,
         \Magento\Sales\Model\OrderFactory $orderFactory,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+        \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
     ) {
         $this->storeManager = $storeManager;
         $this->emulation = $emulation;
@@ -70,7 +70,7 @@ class CheckProcessor
 
     public function execute(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
     ) {
         $this->dataHelper->log("Request authenticated for order #{$order->getIncrementId()}.");
 
@@ -81,7 +81,7 @@ class CheckProcessor
             'micuentaweb_pending_transfer'
         ];
 
-        if ($this->paymentHelper->isPending($order) || in_array($order->getStatus(), $reviewStatuses)) {
+        if ($order->getStatus() === 'pending_payment' || in_array($order->getStatus(), $reviewStatuses)) {
             // Order waiting for payment.
             $this->dataHelper->log("Order #{$order->getIncrementId()} is waiting payment update.");
             $this->dataHelper->log("Payment result for order #{$order->getIncrementId()}: " . ($response->get('error_message') ?: $response->getLogMessage()));

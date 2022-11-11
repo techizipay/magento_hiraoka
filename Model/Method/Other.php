@@ -153,7 +153,7 @@ class Other extends Micuentaweb
 
     public function getSupportedPaymentMeans()
     {
-        $supportedCards = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::getSupportedCardTypes();
+        $supportedCards = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::getSupportedCardTypes();
 
         // Added payment means.
         $addedCards = $this->getAddedPaymentMeans();

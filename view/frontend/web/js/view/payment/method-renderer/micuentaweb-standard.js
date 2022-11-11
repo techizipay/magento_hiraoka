@@ -127,6 +127,26 @@ define(
 
                 ACQ_001: 'El pago es rechazado. Intenta pagar con otra tarjeta.',
                 ACQ_999: 'Ocurrió un error en el proceso de pago.'
+            },
+
+            pt: {
+                RELOAD_LINK: 'Por favor, atualize a página.',
+                CLIENT_001: 'O pagamento é rejeitado. Tente pagar com outro cartão.',
+                CLIENT_101: 'O pagamento é cancelado.',
+                CLIENT_301: 'O número do cartão é inválido. Por favor, cheque o número e tente novamente.',
+                CLIENT_302: 'A data de expiração é inválida. Verifique a data e tente novamente.',
+                CLIENT_303: 'O código de segurança do cartão (CVV) é inválido. Verifique o código e tente novamente.',
+                CLIENT_999: 'Ocorreu um erro técnico. Por favor, tente novamente mais tarde.',
+
+                INT_999: 'Ocorreu um erro técnico. Por favor, tente novamente mais tarde.',
+
+                PSP_003: 'O pagamento é rejeitado. Tente pagar com outro cartão.',
+                PSP_099: 'Muitas tentativas. Por favor, tente novamente mais tarde.',
+                PSP_108: 'O formulário expirou.',
+                PSP_999: 'Ocorreu um erro no processo de pagamento.',
+
+                ACQ_001: 'O pagamento é rejeitado. Tente pagar com outro cartão.',
+                ACQ_999: 'Ocorreu um erro no processo de pagamento.'
             }
         };
 
@@ -178,6 +198,10 @@ define(
                 return window.checkoutConfig.payment.micuentaweb_standard.restFormToken || null;
             },
 
+            getRestReturnUrl: function() {
+                return window.checkoutConfig.payment[this.item.method].restReturnUrl || null;
+            },
+
             getLanguage: function() {
                 return window.checkoutConfig.payment.micuentaweb_standard.language || null;
             },
@@ -194,22 +218,22 @@ define(
 
                 var me = this;
 
-                // Workarround to fix Magento bug: update order summary when modifying minicart.
+                // Workaround to fix Magento bug: update order summary when modifying minicart.
                 $(document).on('ajax:updateCartItemQty ajax:removeFromCart', function() {
                     me.payload = null;
                     getTotalsAction([]);
                 });
 
                 // Update embedded payment token if order amount has changed.
-                quote.totals.subscribe(function(totals) {
+                quote.totals.subscribe(function (totals) {
                     var newPayload = me.getPayload();
-	                if (me.payload && (me.payload === newPayload)) {
-	                    // Unchanged payload, do not refresh.
-	                    return;
-	                }
+                    if (me.payload && (me.payload === newPayload)) {
+                        // Unchanged payload, do not refresh.
+                        return;
+                    }
 
-	                if (!quote.paymentMethod() || !quote.paymentMethod().hasOwnProperty('method') || quote.paymentMethod().method !== 'micuentaweb_standard') {
-	                    // Not our payment method, do not refresh.
+                    if (!quote.paymentMethod() || !quote.paymentMethod().hasOwnProperty('method') || quote.paymentMethod().method !== 'micuentaweb_standard') {
+                        // Not our payment method, do not refresh.
                         return;
                     }
 
@@ -223,32 +247,61 @@ define(
                         language: me.getLanguage()
                     }).then(
                         function(v) {
-                            var KR = v.KR;
+                            KR = v.KR;
                             KR.onFocus(function(e) {
                                 $('#micuentaweb_rest_form .kr-form-error').html('');
                             });
 
                             KR.onError(function(e) {
-                                fullScreenLoader.stopLoader();
-                                me.isPlaceOrderActionAllowed(true);
+                                var answer = e.metadata.answer;
 
-                                var msg = '';
-                                if (DFAULT_MESSAGES.indexOf(e.errorCode) > -1) {
-                                    msg = e.errorMessage;
-                                    var endsWithDot = (msg.lastIndexOf('.') == (msg.length - 1) && msg.lastIndexOf('.') >= 0);
+                                // Force redirection to response page if possibility of retries is exhausted.
+                                if (answer.hasOwnProperty('clientAnswer') && (answer.clientAnswer.orderStatus == "UNPAID") && (answer.clientAnswer.orderCycle == "CLOSED")) {
+                                    var data = {
+                                        'kr-answer-type': 'V4/Payment',
+                                        'kr-answer': JSON.stringify(answer.clientAnswer),
+                                        'kr-hash': answer.hash,
+                                        'kr-hash-algorithm': answer.hashAlgorithm
+                                    };
 
-                                    msg += (endsWithDot ? '' : '.');
+                                    var form = $('<form></form>');
+                                    form.attr("method", "post");
+                                    form.attr("action", me.getRestReturnUrl());
+
+                                    $.each(data, function(key, value) {
+                                        var field = $('<input></input>');
+
+                                        field.attr("type", "hidden");
+                                        field.attr("name", key);
+                                        field.attr("value", value);
+
+                                        form.append(field);
+                                    });
+
+                                    $(document.body).append(form);
+                                    form.submit();
                                 } else {
-                                    msg = me.translateError(e.errorCode);
-                                }
+                                    fullScreenLoader.stopLoader();
+                                    me.isPlaceOrderActionAllowed(true);
 
-                                // Expiration errors, display a link to refresh the page.
-                                if (EXPIRY_ERRORS.indexOf(e.errorCode) >= 0) {
-                                    msg += ' <a href="#" onclick="window.location.reload(); return false;">'
-                                        + me.translateError('RELOAD_LINK') + '</a>';
-                                }
+                                    var msg = '';
+                                    if (DFAULT_MESSAGES.indexOf(e.errorCode) > -1) {
+                                        msg = e.errorMessage;
+                                        var endsWithDot = (msg.lastIndexOf('.') == (msg.length - 1) && msg.lastIndexOf('.') >= 0);
 
-                                $('#micuentaweb_rest_form .kr-form-error').html('<span style="color: red;"><span>' + msg + '</span></span>');
+                                        msg += (endsWithDot ? '' : '.');
+                                    } else {
+                                        msg = me.translateError(e.errorCode);
+                                    }
+
+                                    // Expiration errors, display a link to refresh the page.
+                                    if (EXPIRY_ERRORS.indexOf(e.errorCode) >= 0) {
+                                        msg += ' <a href="#" onclick="window.location.reload(); return false;">'
+                                            + me.translateError('RELOAD_LINK') + '</a>';
+                                    }
+
+                                    $('#micuentaweb_rest_form .kr-form-error').html('<span style="color: red;"><span>' + msg + '</span></span>');
+                                }
                             });
 
                             KR.onSubmit(function(e) {

@@ -92,7 +92,7 @@ class ShipOptions extends \Lyranetwork\Micuentaweb\Block\Adminhtml\System\Config
                     [
                         'STANDARD' => 'Standard',
                         'EXPRESS' => 'Express',
-                        'PRIORITY' => 'Priority'
+                        'PRIORITY' => 'Priority '
                     ]
                 )
             ]

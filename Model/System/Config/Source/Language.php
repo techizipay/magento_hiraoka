@@ -15,7 +15,7 @@ class Language implements \Magento\Framework\Option\ArrayInterface
     {
         $options = [];
 
-        foreach (\Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::getSupportedLanguages() as $code => $name) {
+        foreach (\Lyranetwork\Micuentaweb\Model\Api\Form\Api::getSupportedLanguages() as $code => $name) {
             $options[] = [
                 'value' => $code,
                 'label' => __($name)

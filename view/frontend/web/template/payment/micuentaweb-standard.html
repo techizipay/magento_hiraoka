@@ -48,7 +48,7 @@
                 <!-- ko template: { name: 'Lyranetwork_Micuentaweb/payment/rest', data: $parent, afterRender: function(elts) { $data.initRestEvents(elts); } } --><!-- /ko -->
             <!--/ko-->
 
-            <!-- ko if: isOneClick() -->
+            <!-- ko if: isOneClick() && !getRestFormToken() -->
                 <ul class="micuentaweb-identifier">
                     <li class="micuentaweb-standard-cc-block micuentaweb-block">
                         <!-- ko if: (getEntryMode() == 2) --><!-- Payment means selection on merchant site. -->

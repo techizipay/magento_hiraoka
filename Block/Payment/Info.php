@@ -9,7 +9,7 @@
  */
 namespace Lyranetwork\Micuentaweb\Block\Payment;
 
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse;
+use Lyranetwork\Micuentaweb\Model\Api\Form\Response as MicuentawebResponse;
 
 class Info extends \Magento\Payment\Block\Info
 {

@@ -35,8 +35,8 @@ class Standard extends Micuentaweb
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magento\Payment\Model\Method\Logger $logger
      * @param \Magento\Framework\Locale\ResolverInterface $localeResolver
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequest $micuentawebRequest
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\Request $micuentawebRequest
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
      * @param \Magento\Sales\Model\Order\Payment\Transaction $transaction
      * @param \Magento\Sales\Model\ResourceModel\Order\Payment\Transaction $transactionResource
      * @param \Magento\Framework\UrlInterface $urlBuilder
@@ -45,6 +45,7 @@ class Standard extends Micuentaweb
      * @param \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Checkout $checkoutHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Rest $restHelper
+     * @param \Lyranetwork\Micuentaweb\Helper\Refund $refundHelper
      * @param \Magento\Framework\Message\ManagerInterface $messageManager
      * @param \Magento\Framework\Module\Dir\Reader $dirReader
      * @param \Magento\Framework\DataObject\Factory $dataObjectFactory
@@ -64,8 +65,8 @@ class Standard extends Micuentaweb
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Payment\Model\Method\Logger $logger,
         \Magento\Framework\Locale\ResolverInterface $localeResolver,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequestFactory $micuentawebRequestFactory,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\RequestFactory $micuentawebRequestFactory,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory,
         \Magento\Sales\Model\Order\Payment\Transaction $transaction,
         \Magento\Sales\Model\ResourceModel\Order\Payment\Transaction $transactionResource,
         \Magento\Framework\UrlInterface $urlBuilder,
@@ -74,6 +75,7 @@ class Standard extends Micuentaweb
         \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper,
         \Lyranetwork\Micuentaweb\Helper\Checkout $checkoutHelper,
         \Lyranetwork\Micuentaweb\Helper\Rest $restHelper,
+        \Lyranetwork\Micuentaweb\Helper\Refund $refundHelper,
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Magento\Framework\Module\Dir\Reader $dirReader,
         \Magento\Framework\DataObject\Factory $dataObjectFactory,
@@ -106,6 +108,7 @@ class Standard extends Micuentaweb
             $paymentHelper,
             $checkoutHelper,
             $restHelper,
+            $refundHelper,
             $messageManager,
             $dirReader,
             $dataObjectFactory,
@@ -189,7 +192,7 @@ class Standard extends Micuentaweb
         }
 
         // All cards.
-        $allCards = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::getSupportedCardTypes();
+        $allCards = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::getSupportedCardTypes();
 
         // Selected cards from module configuration.
         $cards = $this->getConfigData('payment_cards');
@@ -327,27 +330,15 @@ class Standard extends Micuentaweb
         return $this->getConfigData('card_info_mode');
     }
 
-    public function getRestApiFormToken()
+    protected function getRestApiFormTokenData($quote)
     {
-        $quote = $this->dataHelper->getCheckoutQuote();
-
-        if (! $quote || ! $quote->getId()) {
-            $this->dataHelper->log('Cannot create a form token. Empty quote passed.');
-            return false;
-        }
-
-        // Amount in current order currency.
         $amount = $quote->getGrandTotal();
-        if ($amount <= 0) {
-            $this->dataHelper->log('Cannot create a form token. Invalid amount passed.');
-            return false;
-        }
 
         // Currency.
-        $currency = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::findCurrencyByAlphaCode($quote->getQuoteCurrencyCode());
+        $currency = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::findCurrencyByAlphaCode($quote->getQuoteCurrencyCode());
         if (! $currency) {
             // If currency is not supported, use base currency.
-            $currency = \Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi::findCurrencyByAlphaCode($quote->getBaseCurrencyCode());
+            $currency = \Lyranetwork\Micuentaweb\Model\Api\Form\Api::findCurrencyByAlphaCode($quote->getBaseCurrencyCode());
 
             // ... and order total in base currency.
             $amount = $quote->getBaseGrandTotal();
@@ -425,20 +416,65 @@ class Standard extends Micuentaweb
                 'phoneNumber' => $shippingAddress->getTelephone(),
                 'country' => $shippingAddress->getCountryId()
             );
-        } 
+        }
 
         // Set the maximum attempts number in case of failed payment.
-        if ($this->getConfigData('rest_attempts')) {
+        if ($this->getConfigData('rest_attempts') !== null) {
             $data['transactionOptions']['cardOptions']['retry'] = $this->getConfigData('rest_attempts');
         }
 
-        $params = json_encode($data);
+        $customer = $quote->getCustomerId() ? $this->customerRepository->getById($quote->getCustomerId()) : null;
+
+        if ($this->isOneClickActive() && $customer) {
+            $data['formAction'] = 'CUSTOMER_WALLET';
+        }
+
+        return json_encode($data);
+    }
+
+    public function getRestApiFormToken($renew = false)
+    {
+        $quote = $this->dataHelper->getCheckoutQuote();
+
+        if (! $quote || ! $quote->getId()) {
+            $this->dataHelper->log('Cannot create a form token. Empty quote passed.');
+            return false;
+        }
+
+        // Amount in current order currency.
+        if ($quote->getGrandTotal() <= 0) {
+            $this->dataHelper->log('Cannot create a form token. Invalid amount passed.');
+            return false;
+        }
+
+        $params = $this->getRestApiFormTokenData($quote);
+
+        $tokenDataName = \Lyranetwork\Micuentaweb\Helper\Payment::TOKEN_DATA;
+        $tokenName = \Lyranetwork\Micuentaweb\Helper\Payment::TOKEN;
+        $expireName = \Lyranetwork\Micuentaweb\Helper\Payment::TOKEN_EXPIRE;
+
+        $expireTime = $quote->getPayment()->getAdditionalInformation($expireName);
+        if ($renew || ($expireTime && (time() >= $expireTime))) {
+            $quote->getPayment()->unsAdditionalInformation($tokenDataName);
+            $quote->getPayment()->unsAdditionalInformation($tokenName);
+        } else {
+            $lastTokenData = $quote->getPayment()->getAdditionalInformation($tokenDataName);
+            $lastToken = $quote->getPayment()->getAdditionalInformation($tokenName);
+
+            $tokenData = base64_encode(serialize($params));
+            if ($lastToken && $lastTokenData && ($lastTokenData === $tokenData)) {
+                // Cart data does not change from last payment attempt, do not re-create payment token.
+                $this->dataHelper->log("Cart data did not change since last payment attempt, use last created token for quote #{$quote->getId()}, reserved order ID #{$quote->getReservedOrderId()}.");
+                return $lastToken;
+            }
+        }
+
         $this->dataHelper->log("Creating form token for quote #{$quote->getId()}, reserved order ID: #{$quote->getReservedOrderId()}"
             . " with parameters: {$params}");
 
         try {
             // Perform our request.
-            $client = new \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRest(
+            $client = new \Lyranetwork\Micuentaweb\Model\Api\Rest\Api(
                 $this->dataHelper->getCommonConfigData('rest_url'),
                 $this->dataHelper->getCommonConfigData('site_id'),
                 $this->restHelper->getPrivateKey()
@@ -459,8 +495,17 @@ class Standard extends Micuentaweb
             } else {
                 $this->dataHelper->log("Form token created successfully for quote #{$quote->getId()}, reserved order ID: #{$quote->getReservedOrderId()}.");
 
+                $token = $response['answer']['formToken'];
+                $tokenData = base64_encode(serialize($params));
+
+                $quote->getPayment()->setAdditionalInformation($tokenDataName, $tokenData);
+                $quote->getPayment()->setAdditionalInformation($tokenName, $token);
+                $quote->getPayment()->setAdditionalInformation($expireName, strtotime("+15 minutes", time()));
+
+                $quote->getPayment()->save();
+
                 // Payment form token created successfully.
-                return $response['answer']['formToken'];
+                return $token;
             }
         } catch (\Exception $e) {
             $this->dataHelper->log($e->getMessage(), \Psr\Log\LogLevel::ERROR);
@@ -470,11 +515,6 @@ class Standard extends Micuentaweb
 
     public function isOneClickActive()
     {
-        // 1-Click enabled and not payment by embedded fields (REST API).
-        if (! $this->isRestMode() && $this->getConfigData('oneclick_active')) {
-            return true;
-        }
-
-        return false;
+        return $this->getConfigData('oneclick_active');
     }
 }

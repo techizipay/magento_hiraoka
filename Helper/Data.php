@@ -9,7 +9,7 @@
  */
 namespace Lyranetwork\Micuentaweb\Helper;
 
-use Lyranetwork\Micuentaweb\Model\Api\MicuentawebApi;
+use Lyranetwork\Micuentaweb\Model\Api\Form\Api as MicuentawebApi;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
@@ -239,6 +239,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
 
         return $this->_getUrl('micuentaweb/payment/response', $params);
+    }
+
+    public function getRestReturnUrl()
+    {
+        return $this->_getUrl('micuentaweb/payment_rest/response', ['_secure' => true]);
     }
 
     /**

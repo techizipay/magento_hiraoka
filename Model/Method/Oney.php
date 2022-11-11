@@ -38,8 +38,8 @@ class Oney extends Micuentaweb
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magento\Payment\Model\Method\Logger $logger
      * @param \Magento\Framework\Locale\ResolverInterface $localeResolver
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequest $micuentawebRequest
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\Request $micuentawebRequest
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
      * @param \Magento\Sales\Model\Order\Payment\Transaction $transaction
      * @param \Magento\Sales\Model\ResourceModel\Order\Payment\Transaction $transactionResource
      * @param \Magento\Framework\UrlInterface $urlBuilder
@@ -47,6 +47,8 @@ class Oney extends Micuentaweb
      * @param \Lyranetwork\Micuentaweb\Helper\Data $dataHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Checkout $checkoutHelper
+     * @param \Lyranetwork\Micuentaweb\Helper\Rest $restHelper
+     * @param \Lyranetwork\Micuentaweb\Helper\Refund $refundHelper
      * @param \Magento\Framework\Message\ManagerInterface $messageManager
      * @param \Magento\Framework\Module\Dir\Reader $dirReader
      * @param \Magento\Framework\DataObject\Factory $dataObjectFactory
@@ -65,8 +67,8 @@ class Oney extends Micuentaweb
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Payment\Model\Method\Logger $logger,
         \Magento\Framework\Locale\ResolverInterface $localeResolver,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebRequestFactory $micuentawebRequestFactory,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\RequestFactory $micuentawebRequestFactory,
+        \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory,
         \Magento\Sales\Model\Order\Payment\Transaction $transaction,
         \Magento\Sales\Model\ResourceModel\Order\Payment\Transaction $transactionResource,
         \Magento\Framework\UrlInterface $urlBuilder,
@@ -75,6 +77,7 @@ class Oney extends Micuentaweb
         \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper,
         \Lyranetwork\Micuentaweb\Helper\Checkout $checkoutHelper,
         \Lyranetwork\Micuentaweb\Helper\Rest $restHelper,
+        \Lyranetwork\Micuentaweb\Helper\Refund $refundHelper,
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Magento\Framework\Module\Dir\Reader $dirReader,
         \Magento\Framework\DataObject\Factory $dataObjectFactory,
@@ -105,6 +108,7 @@ class Oney extends Micuentaweb
             $paymentHelper,
             $checkoutHelper,
             $restHelper,
+            $refundHelper,
             $messageManager,
             $dirReader,
             $dataObjectFactory,
@@ -224,7 +228,7 @@ class Oney extends Micuentaweb
         }
 
         // Reserve order ID and save quote.
-        $quote->reserveOrderId()->save();
+        $quote->reserveOrderId();
 
         if (! preg_match(Checkout::ORDER_ID_REGEX, $quote->getReservedOrderId())) {
             // Order id doesn't match Oney rules.

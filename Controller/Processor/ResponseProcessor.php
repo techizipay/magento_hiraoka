@@ -30,7 +30,7 @@ class ResponseProcessor
     protected $orderFactory;
 
     /**
-     * @var \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory
+     * @var \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory
      */
     protected $micuentawebResponseFactory;
 
@@ -38,13 +38,13 @@ class ResponseProcessor
      * @param \Lyranetwork\Micuentaweb\Helper\Data $dataHelper
      * @param \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper
      * @param \Magento\Sales\Model\OrderFactory $orderFactory
-     * @param \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+     * @param \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
      */
     public function __construct(
         \Lyranetwork\Micuentaweb\Helper\Data $dataHelper,
         \Lyranetwork\Micuentaweb\Helper\Payment $paymentHelper,
         \Magento\Sales\Model\OrderFactory $orderFactory,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponseFactory $micuentawebResponseFactory
+        \Lyranetwork\Micuentaweb\Model\Api\Form\ResponseFactory $micuentawebResponseFactory
     ) {
         $this->dataHelper = $dataHelper;
         $this->paymentHelper = $paymentHelper;
@@ -54,11 +54,11 @@ class ResponseProcessor
 
     public function execute(
         \Magento\Sales\Model\Order $order,
-        \Lyranetwork\Micuentaweb\Model\Api\MicuentawebResponse $response
+        \Lyranetwork\Micuentaweb\Model\Api\Form\Response $response
     ) {
         $this->dataHelper->log("Request authenticated for order #{$order->getIncrementId()}.");
 
-        if ($this->paymentHelper->isPending($order)) {
+        if ($order->getStatus() === 'pending_payment') {
             // Order waiting for payment.
             $this->dataHelper->log("Order #{$order->getIncrementId()} is waiting payment.");
             $this->dataHelper->log("Payment result for order #{$order->getIncrementId()}: " . ($response->get('error_message') ?: $response->getLogMessage()));
